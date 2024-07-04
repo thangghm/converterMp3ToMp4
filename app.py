@@ -58,15 +58,21 @@ from botocore.exceptions import NoCredentialsError, PartialCredentialsError
 app = Flask(__name__)
 
 # Initialize the S3 client using environment variables
+aws_access_key_id = os.environ.get('AWS_ACCESS_KEY_ID')
+aws_secret_access_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+aws_region = os.environ.get('AWS_REGION')
+bucket_name = os.environ.get('S3_BUCKET_NAME')
+
+# Check if any of the environment variables are not set
+if not all([aws_access_key_id, aws_secret_access_key, aws_region, bucket_name]):
+    raise ValueError("One or more AWS environment variables are not set. Make sure to set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, and S3_BUCKET_NAME.")
+
 s3_client = boto3.client(
     's3',
-    aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
-    aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'),
-    region_name=os.environ.get('AWS_REGION')
+    aws_access_key_id=aws_access_key_id,
+    aws_secret_access_key=aws_secret_access_key,
+    region_name=aws_region
 )
-
-# S3 bucket name from environment variable
-BUCKET_NAME = os.environ.get('S3_BUCKET_NAME')
 
 @app.route('/create_video', methods=['POST'])
 def create_video():
@@ -101,8 +107,8 @@ def create_video():
 
         # Upload video to S3
         try:
-            s3_client.upload_file(output_file, BUCKET_NAME, output_file)
-            s3_url = f"https://{BUCKET_NAME}.s3.amazonaws.com/{output_file}"
+            s3_client.upload_file(output_file, bucket_name, output_file)
+            s3_url = f"https://{bucket_name}.s3.amazonaws.com/{output_file}"
         except (NoCredentialsError, PartialCredentialsError):
             return jsonify({'error': 'Credentials not available'}), 500
 
