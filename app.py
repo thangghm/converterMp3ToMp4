@@ -1,6 +1,7 @@
 import os
 import requests
 from flask import Flask, request, jsonify
+from PIL import Image
 
 app = Flask(__name__)
 
@@ -21,6 +22,13 @@ def create_video():
         response = requests.get(image_url)
         with open(image_file, 'wb') as file:
             file.write(response.content)
+
+        img = Image.open(image_file)
+        width, height = img.size
+        new_width = width - (width % 2)
+        new_height = height - (height % 2)
+        img = img.resize((new_width, new_height))
+        img.save(image_file)
 
         response = requests.get(mp3_url)
         with open(mp3_file, 'wb') as file:
