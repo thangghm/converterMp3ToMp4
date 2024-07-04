@@ -88,20 +88,16 @@ def create_video():
     output_file = "output_video.mp4"
 
     try:
-        # Download image
         response = requests.get(image_url)
         with open(image_file, 'wb') as file:
             file.write(response.content)
 
-        # Download mp3
         response = requests.get(mp3_url)
         with open(mp3_file, 'wb') as file:
             file.write(response.content)
 
-        # Create video with ffmpeg
         os.system(f"ffmpeg -loop 1 -i {image_file} -i {mp3_file} -c:v libx264 -c:a aac -b:a 192k -shortest {output_file}")
 
-        # Clean up local files
         os.remove(image_file)
         os.remove(mp3_file)
 
