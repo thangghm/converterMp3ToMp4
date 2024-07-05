@@ -85,7 +85,7 @@ def create_video():
 
     image_file = "image.jpg"
     mp3_file = "audio.mp3"
-    output_file = "output_video.mp4"
+    output_file = f"{uuid.uuid4()}.mp4"
 
     try:
         response = requests.get(image_url)
