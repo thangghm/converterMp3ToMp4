@@ -37,7 +37,7 @@ def create_video():
     image_file = "image.jpg"
     mp3_file = "audio.mp3"
     output_file = f"{uuid.uuid4()}.mp4"
-    
+
     try:
         response = requests.get(image_url)
         with open(image_file, 'wb') as file:
@@ -47,7 +47,7 @@ def create_video():
         with open(mp3_file, 'wb') as file:
             file.write(response.content)
 
-        os.system(f"ffmpeg -loop 1 -i {image_file} -i {mp3_file} -c:v libx264 -c:a aac -b:a 192k -shortest {output_file}")
+        os.system(f"ffmpeg -loop 1 -i {image_file} -i {mp3_file} -c:v libx264 -b:v 500k -c:a aac -b:a 128k -shortest {output_file}")
 
         os.remove(image_file)
         os.remove(mp3_file)
