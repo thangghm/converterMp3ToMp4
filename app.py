@@ -2,6 +2,7 @@
 import os
 import requests
 import boto3
+import uuid
 from flask import Flask, request, jsonify
 from botocore.exceptions import NoCredentialsError, PartialCredentialsError
 
@@ -35,8 +36,8 @@ def create_video():
 
     image_file = "image.jpg"
     mp3_file = "audio.mp3"
-    output_file = "output_video.mp4"
-
+    output_file = f"{uuid.uuid4()}.mp4"
+    
     try:
         response = requests.get(image_url)
         with open(image_file, 'wb') as file:
