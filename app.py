@@ -1,7 +1,7 @@
+
 import os
 import requests
 import boto3
-import uuid
 from flask import Flask, request, jsonify
 from botocore.exceptions import NoCredentialsError, PartialCredentialsError
 
@@ -15,7 +15,7 @@ bucket_name = os.environ.get('S3_BUCKET_NAME')
 
 # Check if any of the environment variables are not set
 if not all([aws_access_key_id, aws_secret_access_key, aws_region, bucket_name]):
-    raise ValueError("One or more AWS environment variables are not set")
+    raise ValueError("One or more AWS environment variables are not set. Make sure to set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, and S3_BUCKET_NAME.")
 
 s3_client = boto3.client(
     's3',
@@ -35,42 +35,33 @@ def create_video():
 
     image_file = "image.jpg"
     mp3_file = "audio.mp3"
-    output_file = f"{uuid.uuid4()}.mp4"  # Tạo tên tệp duy nhất
+    output_file = "output_video.mp4"
 
     try:
-        # Download the image
         response = requests.get(image_url)
-        response.raise_for_status()  # Kiểm tra nếu có lỗi HTTP
         with open(image_file, 'wb') as file:
             file.write(response.content)
 
-        # Download the audio
         response = requests.get(mp3_url)
-        response.raise_for_status()  # Kiểm tra nếu có lỗi HTTP
         with open(mp3_file, 'wb') as file:
             file.write(response.content)
 
-        # Create the video using ffmpeg
         os.system(f"ffmpeg -loop 1 -i {image_file} -i {mp3_file} -c:v libx264 -c:a aac -b:a 192k -shortest {output_file}")
 
-        # Upload the video to S3
-        s3_client.upload_file(output_file, bucket_name, output_file, ExtraArgs={'ACL': 'public-read'})
-
-        # Generate the URL
-        s3_url = f"https://{bucket_name}.s3.{aws_region}.amazonaws.com/{output_file}"
-
-        # Clean up local files
         os.remove(image_file)
         os.remove(mp3_file)
+
+        # Upload video to S3
+        try:
+            s3_client.upload_file(output_file, bucket_name, output_file)
+            s3_url = f"https://{bucket_name}.s3.{aws_region}.amazonaws.com/{output_file}"
+        except (NoCredentialsError, PartialCredentialsError):
+            return jsonify({'error': 'Credentials not available'}), 500
+
+        # Clean up the local output video file
         os.remove(output_file)
 
-        return jsonify({'message': 'Video created successfully', 'url': s3_url})
-    except requests.exceptions.RequestException as e:
-        return jsonify({'error': f"Error downloading files: {str(e)}"}), 500
-    except NoCredentialsError:
-        return jsonify({'error': 'AWS credentials not available'}), 500
-    except PartialCredentialsError:
-        return jsonify({'error': 'Incomplete AWS credentials'}), 500
+        return jsonify({'message': 'Video created and uploaded successfully', 's3_url': s3_url})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
